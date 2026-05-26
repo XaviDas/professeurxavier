@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="dark flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <main className="flex flex-1 flex-col items-center justify-center px-6">
         <div className="flex w-full max-w-sm flex-col items-center">
           <div className="aspect-square w-64 sm:w-72">
@@ -35,7 +35,7 @@ function Landing() {
           </p>
 
           <Link
-            to="/dashboard"
+            to="/login/eleve"
             className="mt-12 inline-flex w-full items-center justify-center rounded-md bg-foreground px-8 py-3.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
           >
             Connexion Élève
@@ -45,7 +45,7 @@ function Landing() {
 
       <footer className="pb-8 text-center">
         <Link
-          to="/dashboard"
+          to="/login/enseignant"
           className="text-xs tracking-wide text-muted-foreground/60 underline-offset-4 transition-colors hover:text-muted-foreground hover:underline"
         >
           Connexion Enseignant

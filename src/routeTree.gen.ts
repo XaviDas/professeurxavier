@@ -11,7 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginEnseignantRouteImport } from './routes/login.enseignant'
+import { Route as LoginEleveRouteImport } from './routes/login.eleve'
 import { Route as AppSessionRouteImport } from './routes/_app/session'
+import { Route as AppDashboardEnseignantRouteImport } from './routes/_app/dashboard.enseignant'
+import { Route as AppDashboardEleveRouteImport } from './routes/_app/dashboard.eleve'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -22,37 +26,91 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginEnseignantRoute = LoginEnseignantRouteImport.update({
+  id: '/login/enseignant',
+  path: '/login/enseignant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginEleveRoute = LoginEleveRouteImport.update({
+  id: '/login/eleve',
+  path: '/login/eleve',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppSessionRoute = AppSessionRouteImport.update({
   id: '/session',
   path: '/session',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardEnseignantRoute = AppDashboardEnseignantRouteImport.update({
+  id: '/dashboard/enseignant',
+  path: '/dashboard/enseignant',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardEleveRoute = AppDashboardEleveRouteImport.update({
+  id: '/dashboard/eleve',
+  path: '/dashboard/eleve',
   getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/session': typeof AppSessionRoute
+  '/login/eleve': typeof LoginEleveRoute
+  '/login/enseignant': typeof LoginEnseignantRoute
+  '/dashboard/eleve': typeof AppDashboardEleveRoute
+  '/dashboard/enseignant': typeof AppDashboardEnseignantRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/session': typeof AppSessionRoute
+  '/login/eleve': typeof LoginEleveRoute
+  '/login/enseignant': typeof LoginEnseignantRoute
+  '/dashboard/eleve': typeof AppDashboardEleveRoute
+  '/dashboard/enseignant': typeof AppDashboardEnseignantRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_app/session': typeof AppSessionRoute
+  '/login/eleve': typeof LoginEleveRoute
+  '/login/enseignant': typeof LoginEnseignantRoute
+  '/_app/dashboard/eleve': typeof AppDashboardEleveRoute
+  '/_app/dashboard/enseignant': typeof AppDashboardEnseignantRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/session'
+  fullPaths:
+    | '/'
+    | '/session'
+    | '/login/eleve'
+    | '/login/enseignant'
+    | '/dashboard/eleve'
+    | '/dashboard/enseignant'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/session'
-  id: '__root__' | '/' | '/_app' | '/_app/session'
+  to:
+    | '/'
+    | '/session'
+    | '/login/eleve'
+    | '/login/enseignant'
+    | '/dashboard/eleve'
+    | '/dashboard/enseignant'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_app/session'
+    | '/login/eleve'
+    | '/login/enseignant'
+    | '/_app/dashboard/eleve'
+    | '/_app/dashboard/enseignant'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  LoginEleveRoute: typeof LoginEleveRoute
+  LoginEnseignantRoute: typeof LoginEnseignantRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -71,6 +129,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/enseignant': {
+      id: '/login/enseignant'
+      path: '/login/enseignant'
+      fullPath: '/login/enseignant'
+      preLoaderRoute: typeof LoginEnseignantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/eleve': {
+      id: '/login/eleve'
+      path: '/login/eleve'
+      fullPath: '/login/eleve'
+      preLoaderRoute: typeof LoginEleveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/session': {
       id: '/_app/session'
       path: '/session'
@@ -78,15 +150,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSessionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/dashboard/enseignant': {
+      id: '/_app/dashboard/enseignant'
+      path: '/dashboard/enseignant'
+      fullPath: '/dashboard/enseignant'
+      preLoaderRoute: typeof AppDashboardEnseignantRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard/eleve': {
+      id: '/_app/dashboard/eleve'
+      path: '/dashboard/eleve'
+      fullPath: '/dashboard/eleve'
+      preLoaderRoute: typeof AppDashboardEleveRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppSessionRoute: typeof AppSessionRoute
+  AppDashboardEleveRoute: typeof AppDashboardEleveRoute
+  AppDashboardEnseignantRoute: typeof AppDashboardEnseignantRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppSessionRoute: AppSessionRoute,
+  AppDashboardEleveRoute: AppDashboardEleveRoute,
+  AppDashboardEnseignantRoute: AppDashboardEnseignantRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -94,6 +184,8 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  LoginEleveRoute: LoginEleveRoute,
+  LoginEnseignantRoute: LoginEnseignantRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

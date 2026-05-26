@@ -3,22 +3,24 @@ import { useState } from "react";
 import { X, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_app/session")({
+  head: () => ({ meta: [{ title: "Session de révision" }] }),
   component: SessionPage,
 });
 
+// Recto = Portugais (visible), Verso = Français (réponse)
 const DECK = [
-  { fr: "la boulangerie", pt: "a padaria" },
-  { fr: "le quartier", pt: "o bairro" },
-  { fr: "se promener", pt: "passear" },
-  { fr: "tout à l'heure", pt: "daqui a pouco" },
-  { fr: "néanmoins", pt: "no entanto" },
+  { pt: "a padaria", fr: "la boulangerie" },
+  { pt: "o bairro", fr: "le quartier" },
+  { pt: "passear", fr: "se promener" },
+  { pt: "daqui a pouco", fr: "tout à l'heure" },
+  { pt: "no entanto", fr: "néanmoins" },
 ];
 
 const FEEDBACK = [
-  { label: "Je ne me rappelle pas", sub: "Rever hoje", tone: "border-destructive/40 hover:bg-destructive/5 text-destructive" },
-  { label: "Difficile", sub: "~ 2 dias", tone: "border-ochre/50 hover:bg-ochre/10 text-foreground" },
-  { label: "Moyen", sub: "~ 5 dias", tone: "border-border hover:bg-secondary text-foreground" },
-  { label: "Facile", sub: "~ 12 dias", tone: "border-sage/50 hover:bg-sage/10 text-foreground" },
+  { label: "Je ne me rappelle pas", sub: "À revoir aujourd'hui", tone: "text-destructive border-destructive/40 hover:bg-destructive/10" },
+  { label: "Difficile", sub: "~ 2 jours", tone: "border-ochre/50 hover:bg-ochre/10" },
+  { label: "Moyen", sub: "~ 5 jours", tone: "border-border hover:bg-secondary" },
+  { label: "Facile", sub: "~ 12 jours", tone: "border-sage/50 hover:bg-sage/10" },
 ];
 
 function SessionPage() {
@@ -40,20 +42,20 @@ function SessionPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center bg-background px-6">
+      <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center bg-background px-6 text-foreground">
         <div className="max-w-md text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sage/15">
             <Check className="h-8 w-8 text-sage" />
           </div>
-          <h1 className="mt-6 font-display text-4xl">Sessão concluída</h1>
-          <p className="mt-3 text-muted-foreground">
-            Você revisou {DECK.length} cartas. Volte amanhã para continuar.
+          <h1 className="mt-6 font-display text-4xl">Session terminée</h1>
+          <p className="mt-3 text-muted-foreground/70">
+            Vous avez révisé {DECK.length} cartes. Revenez demain pour continuer.
           </p>
           <Link
-            to="/dashboard"
-            className="mt-8 inline-flex rounded-md bg-foreground px-6 py-3 text-background hover:opacity-90"
+            to="/dashboard/eleve"
+            className="mt-8 inline-flex rounded-md bg-foreground px-6 py-3 text-sm font-medium text-background hover:opacity-90"
           >
-            Voltar ao painel
+            Retour au tableau de bord
           </Link>
         </div>
       </div>
@@ -61,18 +63,18 @@ function SessionPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-3rem)] flex-col bg-background">
-      {/* Top bar */}
+    <div className="flex min-h-[calc(100vh-3rem)] flex-col bg-background text-foreground">
+      {/* Top bar with discreet progress */}
       <div className="border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">
-            Carta {index + 1} / {DECK.length}
+          <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
+            Carte {index + 1} / {DECK.length}
           </span>
-          <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">
+          <Link to="/dashboard/eleve" className="text-muted-foreground/70 hover:text-foreground">
             <X className="h-4 w-4" />
           </Link>
         </div>
-        <div className="h-0.5 w-full bg-secondary">
+        <div className="h-px w-full bg-border">
           <div
             className="h-full bg-accent transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -83,42 +85,56 @@ function SessionPage() {
       {/* Card */}
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-2xl">
-          <div className="rounded-lg border border-border bg-card px-10 py-20 text-center shadow-sm">
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Francês
-            </span>
-            <p className="mt-4 font-display text-5xl leading-tight md:text-6xl">{card.fr}</p>
-
-            {revealed && (
-              <>
-                <div className="mx-auto my-10 h-px w-16 bg-border" />
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="perspective-1200">
+            <div
+              className={`preserve-3d relative h-72 w-full transition-transform duration-700 ease-out md:h-80 ${
+                revealed ? "rotate-y-180" : ""
+              }`}
+            >
+              {/* Recto - Portugais */}
+              <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-border bg-card/60 px-10 py-16 text-center neon-border">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
                   Português
                 </span>
-                <p className="mt-4 font-display text-4xl italic text-accent md:text-5xl">{card.pt}</p>
-              </>
-            )}
+                <p className="mt-6 font-display text-5xl leading-tight md:text-6xl">
+                  {card.pt}
+                </p>
+              </div>
+
+              {/* Verso - Français */}
+              <div className="backface-hidden rotate-y-180 absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-border bg-card/60 px-10 py-16 text-center neon-border">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
+                  Français
+                </span>
+                <p className="mt-6 font-display text-5xl italic leading-tight text-accent md:text-6xl">
+                  {card.fr}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
-          <div className="mt-8">
+          <div className="mt-10">
             {!revealed ? (
               <button
                 onClick={() => setRevealed(true)}
-                className="w-full rounded-md bg-foreground py-4 text-background hover:opacity-90"
+                className="w-full rounded-md bg-foreground py-4 text-sm font-medium text-background hover:opacity-90"
               >
-                Mostrar resposta
+                Afficher la réponse
               </button>
             ) : (
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div
+                key={index}
+                className="grid grid-cols-2 gap-3 animate-fade-up md:grid-cols-4"
+              >
                 {FEEDBACK.map((f) => (
                   <button
                     key={f.label}
                     onClick={handleFeedback}
-                    className={`flex flex-col items-center gap-1 rounded-md border bg-card py-4 px-3 transition-colors ${f.tone}`}
+                    className={`flex flex-col items-center gap-1 rounded-md border bg-card/40 px-3 py-4 transition-colors ${f.tone}`}
                   >
                     <span className="text-sm font-medium">{f.label}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
                       {f.sub}
                     </span>
                   </button>

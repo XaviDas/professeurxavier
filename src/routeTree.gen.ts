@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppSessionRouteImport } from './routes/_app/session'
-import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -28,35 +27,27 @@ const AppSessionRoute = AppSessionRouteImport.update({
   path: '/session',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof AppDashboardRoute
   '/session': typeof AppSessionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof AppDashboardRoute
   '/session': typeof AppSessionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
-  '/_app/dashboard': typeof AppDashboardRoute
   '/_app/session': typeof AppSessionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/session'
+  fullPaths: '/' | '/session'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/session'
-  id: '__root__' | '/' | '/_app' | '/_app/dashboard' | '/_app/session'
+  to: '/' | '/session'
+  id: '__root__' | '/' | '/_app' | '/_app/session'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -87,23 +78,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSessionRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
   }
 }
 
 interface AppRouteChildren {
-  AppDashboardRoute: typeof AppDashboardRoute
   AppSessionRoute: typeof AppSessionRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppDashboardRoute: AppDashboardRoute,
   AppSessionRoute: AppSessionRoute,
 }
 
@@ -116,3 +98,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

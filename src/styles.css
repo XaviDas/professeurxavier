@@ -108,24 +108,25 @@
 }
 
 .dark {
-  --paper: oklch(0.17 0.01 60);
-  --ink: oklch(0.96 0.005 80);
-  --rouge: oklch(0.62 0.2 25);
+  /* Anthracite dark mode */
+  --paper: oklch(0.16 0.005 260);
+  --ink: oklch(0.98 0.003 250);
+  --rouge: oklch(0.68 0.18 25);
   --rouge-foreground: oklch(0.98 0.005 80);
-  --rule: oklch(0.3 0.01 60);
+  --rule: oklch(0.28 0.005 260);
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: oklch(0.22 0.01 60);
+  --card: oklch(0.2 0.005 260);
   --card-foreground: var(--ink);
-  --popover: oklch(0.22 0.01 60);
+  --popover: oklch(0.2 0.005 260);
   --popover-foreground: var(--ink);
   --primary: var(--ink);
   --primary-foreground: var(--paper);
-  --secondary: oklch(0.25 0.01 60);
+  --secondary: oklch(0.23 0.005 260);
   --secondary-foreground: var(--ink);
-  --muted: oklch(0.25 0.01 60);
-  --muted-foreground: oklch(0.7 0.01 70);
+  --muted: oklch(0.23 0.005 260);
+  --muted-foreground: oklch(0.65 0.008 260);
   --accent: var(--rouge);
   --accent-foreground: var(--rouge-foreground);
   --destructive: oklch(0.62 0.22 27);
@@ -134,14 +135,34 @@
   --input: var(--rule);
   --ring: var(--rouge);
 
-  --sidebar: oklch(0.2 0.01 60);
+  --sidebar: oklch(0.18 0.005 260);
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--rouge);
   --sidebar-primary-foreground: var(--paper);
-  --sidebar-accent: oklch(0.25 0.01 60);
+  --sidebar-accent: oklch(0.23 0.005 260);
   --sidebar-accent-foreground: var(--ink);
   --sidebar-border: var(--rule);
   --sidebar-ring: var(--rouge);
+}
+
+@layer utilities {
+  .perspective-1200 { perspective: 1200px; }
+  .preserve-3d { transform-style: preserve-3d; }
+  .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .rotate-y-180 { transform: rotateY(180deg); }
+
+  .neon-border {
+    box-shadow:
+      0 0 0 1px oklch(0.68 0.18 25 / 0.4),
+      0 0 24px -4px oklch(0.68 0.18 25 / 0.35),
+      0 0 60px -10px oklch(0.68 0.18 25 / 0.25);
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up { animation: fade-up 0.5s ease-out both; }
 }
 
 @layer base {

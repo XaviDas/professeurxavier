@@ -33,7 +33,8 @@ function SessionPage() {
   const card = DECK[index];
   const progress = ((index + (revealed ? 0.5 : 0)) / DECK.length) * 100;
 
-  const handleFeedback = () => {
+  const handleFeedback = async (key: Feedback) => {
+    await recordFeedback(card.id, card.box, key);
     if (index + 1 >= DECK.length) {
       setDone(true);
     } else {

@@ -1,16 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Check } from "lucide-react";
 import { recordFeedback, type Feedback } from "@/lib/leitner";
+import { fetchDueCards, DAILY_LIMIT, type SessionCard } from "@/lib/session";
 
 export const Route = createFileRoute("/_app/session")({
   head: () => ({ meta: [{ title: "Session de révision" }] }),
   component: SessionPage,
 });
 
-// Recto = Portugais (visible), Verso = Français (réponse)
-// `id` correspond à flashcards.id ; `box` à card_progress.box_number.
-const DECK = [
+// Deck de démonstration (utilisé si pas de cartes réelles / hors connexion)
+const DEMO_DECK: SessionCard[] = [
   { id: "demo-1", pt: "a padaria", fr: "la boulangerie", box: 1 },
   { id: "demo-2", pt: "o bairro", fr: "le quartier", box: 1 },
   { id: "demo-3", pt: "passear", fr: "se promener", box: 1 },
@@ -26,22 +26,51 @@ const FEEDBACK: { key: Feedback; label: string; sub: string; tone: string }[] = 
 ];
 
 function SessionPage() {
+  const [deck, setDeck] = useState<SessionCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [done, setDone] = useState(false);
 
-  const card = DECK[index];
-  const progress = ((index + (revealed ? 0.5 : 0)) / DECK.length) * 100;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const cards = await fetchDueCards();
+      if (cancelled) return;
+      // Plafond strict de 25 cartes/jour (anti-découragement)
+      const limited = (cards ?? DEMO_DECK).slice(0, DAILY_LIMIT);
+      setDeck(limited);
+      setLoading(false);
+      if (limited.length === 0) setDone(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const card = deck[index];
+  const progress = deck.length
+    ? ((index + (revealed ? 0.5 : 0)) / deck.length) * 100
+    : 0;
 
   const handleFeedback = async (key: Feedback) => {
+    if (!card) return;
     await recordFeedback(card.id, card.box, key);
-    if (index + 1 >= DECK.length) {
+    if (index + 1 >= deck.length) {
       setDone(true);
     } else {
       setIndex(index + 1);
       setRevealed(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center bg-background text-muted-foreground/60">
+        <span className="text-xs uppercase tracking-[0.25em]">Chargement…</span>
+      </div>
+    );
+  }
 
   if (done) {
     return (
@@ -50,10 +79,11 @@ function SessionPage() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sage/15">
             <Check className="h-8 w-8 text-sage" />
           </div>
-          <h1 className="mt-6 font-display text-4xl">Session terminée</h1>
+          <h1 className="mt-6 font-display text-4xl">Excellent travail !</h1>
           <p className="mt-3 text-muted-foreground/70">
-            Vous avez révisé {DECK.length} cartes. Revenez demain pour continuer.
+            Tu as fini ta session du jour. À demain !
           </p>
+
           <Link
             to="/dashboard/eleve"
             className="mt-8 inline-flex rounded-md bg-foreground px-6 py-3 text-sm font-medium text-background hover:opacity-90"
@@ -71,7 +101,7 @@ function SessionPage() {
       <div className="border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
           <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
-            Carte {index + 1} / {DECK.length}
+            Carte {index + 1} / {deck.length}
           </span>
           <Link to="/dashboard/eleve" className="text-muted-foreground/70 hover:text-foreground">
             <X className="h-4 w-4" />

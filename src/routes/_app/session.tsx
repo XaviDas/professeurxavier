@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { X, Check } from "lucide-react";
+import { recordFeedback, type Feedback } from "@/lib/leitner";
 
 export const Route = createFileRoute("/_app/session")({
   head: () => ({ meta: [{ title: "Session de révision" }] }),
@@ -8,19 +9,20 @@ export const Route = createFileRoute("/_app/session")({
 });
 
 // Recto = Portugais (visible), Verso = Français (réponse)
+// `id` correspond à flashcards.id ; `box` à card_progress.box_number.
 const DECK = [
-  { pt: "a padaria", fr: "la boulangerie" },
-  { pt: "o bairro", fr: "le quartier" },
-  { pt: "passear", fr: "se promener" },
-  { pt: "daqui a pouco", fr: "tout à l'heure" },
-  { pt: "no entanto", fr: "néanmoins" },
+  { id: "demo-1", pt: "a padaria", fr: "la boulangerie", box: 1 },
+  { id: "demo-2", pt: "o bairro", fr: "le quartier", box: 1 },
+  { id: "demo-3", pt: "passear", fr: "se promener", box: 1 },
+  { id: "demo-4", pt: "daqui a pouco", fr: "tout à l'heure", box: 1 },
+  { id: "demo-5", pt: "no entanto", fr: "néanmoins", box: 1 },
 ];
 
-const FEEDBACK = [
-  { label: "Je ne me rappelle pas", sub: "À revoir aujourd'hui", tone: "text-destructive border-destructive/40 hover:bg-destructive/10" },
-  { label: "Difficile", sub: "~ 2 jours", tone: "border-ochre/50 hover:bg-ochre/10" },
-  { label: "Moyen", sub: "~ 5 jours", tone: "border-border hover:bg-secondary" },
-  { label: "Facile", sub: "~ 12 jours", tone: "border-sage/50 hover:bg-sage/10" },
+const FEEDBACK: { key: Feedback; label: string; sub: string; tone: string }[] = [
+  { key: "forgot", label: "Je ne me rappelle pas", sub: "Aujourd'hui", tone: "text-destructive border-destructive/40 hover:bg-destructive/10" },
+  { key: "hard", label: "Difficile", sub: "Demain", tone: "border-ochre/50 hover:bg-ochre/10" },
+  { key: "medium", label: "Moyen", sub: "Quelques jours", tone: "border-border hover:bg-secondary" },
+  { key: "easy", label: "Facile", sub: "Espacement long", tone: "border-sage/50 hover:bg-sage/10" },
 ];
 
 function SessionPage() {

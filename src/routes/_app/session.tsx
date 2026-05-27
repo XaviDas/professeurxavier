@@ -133,7 +133,7 @@ function SessionPage() {
                 {FEEDBACK.map((f) => (
                   <button
                     key={f.label}
-                    onClick={handleFeedback}
+                    onClick={() => handleFeedback(f.key)}
                     className={`flex flex-col items-center gap-1 rounded-md border bg-card/40 px-3 py-4 transition-colors ${f.tone}`}
                   >
                     <span className="text-sm font-medium">{f.label}</span>

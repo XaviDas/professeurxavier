@@ -101,7 +101,7 @@ function SessionPage() {
       <div className="border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
           <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
-            Carte {index + 1} / {DECK.length}
+            Carte {index + 1} / {deck.length}
           </span>
           <Link to="/dashboard/eleve" className="text-muted-foreground/70 hover:text-foreground">
             <X className="h-4 w-4" />

@@ -14,7 +14,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginEnseignantRouteImport } from './routes/login.enseignant'
 import { Route as LoginEleveRouteImport } from './routes/login.eleve'
 import { Route as AppSessionRouteImport } from './routes/_app/session'
-import { Route as ApiPublicBootstrapTeacherRouteImport } from './routes/api/public/bootstrap-teacher'
 import { Route as AppDashboardEnseignantRouteImport } from './routes/_app/dashboard.enseignant'
 import { Route as AppDashboardEleveRouteImport } from './routes/_app/dashboard.eleve'
 
@@ -42,12 +41,6 @@ const AppSessionRoute = AppSessionRouteImport.update({
   path: '/session',
   getParentRoute: () => AppRoute,
 } as any)
-const ApiPublicBootstrapTeacherRoute =
-  ApiPublicBootstrapTeacherRouteImport.update({
-    id: '/api/public/bootstrap-teacher',
-    path: '/api/public/bootstrap-teacher',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AppDashboardEnseignantRoute = AppDashboardEnseignantRouteImport.update({
   id: '/dashboard/enseignant',
   path: '/dashboard/enseignant',
@@ -66,7 +59,6 @@ export interface FileRoutesByFullPath {
   '/login/enseignant': typeof LoginEnseignantRoute
   '/dashboard/eleve': typeof AppDashboardEleveRoute
   '/dashboard/enseignant': typeof AppDashboardEnseignantRoute
-  '/api/public/bootstrap-teacher': typeof ApiPublicBootstrapTeacherRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,7 +67,6 @@ export interface FileRoutesByTo {
   '/login/enseignant': typeof LoginEnseignantRoute
   '/dashboard/eleve': typeof AppDashboardEleveRoute
   '/dashboard/enseignant': typeof AppDashboardEnseignantRoute
-  '/api/public/bootstrap-teacher': typeof ApiPublicBootstrapTeacherRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,7 +77,6 @@ export interface FileRoutesById {
   '/login/enseignant': typeof LoginEnseignantRoute
   '/_app/dashboard/eleve': typeof AppDashboardEleveRoute
   '/_app/dashboard/enseignant': typeof AppDashboardEnseignantRoute
-  '/api/public/bootstrap-teacher': typeof ApiPublicBootstrapTeacherRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,7 +87,6 @@ export interface FileRouteTypes {
     | '/login/enseignant'
     | '/dashboard/eleve'
     | '/dashboard/enseignant'
-    | '/api/public/bootstrap-teacher'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,7 +95,6 @@ export interface FileRouteTypes {
     | '/login/enseignant'
     | '/dashboard/eleve'
     | '/dashboard/enseignant'
-    | '/api/public/bootstrap-teacher'
   id:
     | '__root__'
     | '/'
@@ -116,7 +104,6 @@ export interface FileRouteTypes {
     | '/login/enseignant'
     | '/_app/dashboard/eleve'
     | '/_app/dashboard/enseignant'
-    | '/api/public/bootstrap-teacher'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -124,7 +111,6 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginEleveRoute: typeof LoginEleveRoute
   LoginEnseignantRoute: typeof LoginEnseignantRoute
-  ApiPublicBootstrapTeacherRoute: typeof ApiPublicBootstrapTeacherRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,13 +150,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSessionRouteImport
       parentRoute: typeof AppRoute
     }
-    '/api/public/bootstrap-teacher': {
-      id: '/api/public/bootstrap-teacher'
-      path: '/api/public/bootstrap-teacher'
-      fullPath: '/api/public/bootstrap-teacher'
-      preLoaderRoute: typeof ApiPublicBootstrapTeacherRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app/dashboard/enseignant': {
       id: '/_app/dashboard/enseignant'
       path: '/dashboard/enseignant'
@@ -207,8 +186,17 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginEleveRoute: LoginEleveRoute,
   LoginEnseignantRoute: LoginEnseignantRoute,
-  ApiPublicBootstrapTeacherRoute: ApiPublicBootstrapTeacherRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

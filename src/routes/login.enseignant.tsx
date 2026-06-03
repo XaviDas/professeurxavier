@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/login/enseignant")({
   head: () => ({ meta: [{ title: "Connexion Enseignant — Professeur Xavier" }] }),
@@ -8,10 +11,36 @@ export const Route = createFileRoute("/login/enseignant")({
 
 function LoginEnseignant() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/dashboard/enseignant" });
+    if (loading) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.user) {
+        toast.error(error?.message ?? "Identifiants invalides");
+        return;
+      }
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id);
+      const isTeacher = roles?.some((r) => r.role === "enseignant");
+      if (!isTeacher) {
+        await supabase.auth.signOut();
+        toast.error("Ce compte n'a pas le rôle enseignant.");
+        return;
+      }
+      navigate({ to: "/dashboard/enseignant" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur de connexion");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,6 +70,9 @@ function LoginEnseignant() {
               </span>
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="prof@exemple.com"
                 className="w-full rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent"
               />
@@ -51,6 +83,9 @@ function LoginEnseignant() {
               </span>
               <input
                 type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent"
               />
@@ -58,9 +93,10 @@ function LoginEnseignant() {
 
             <button
               type="submit"
-              className="mt-2 w-full rounded-md bg-foreground py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+              disabled={loading}
+              className="mt-2 w-full rounded-md bg-foreground py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              Se connecter
+              {loading ? "Connexion…" : "Se connecter"}
             </button>
           </form>
         </div>

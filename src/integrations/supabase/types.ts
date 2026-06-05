@@ -56,6 +56,51 @@ export type Database = {
           },
         ]
       }
+      card_reviews: {
+        Row: {
+          box_after: number
+          box_before: number
+          card_id: string
+          created_at: string
+          feedback: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          box_after: number
+          box_before: number
+          card_id: string
+          created_at?: string
+          feedback: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          box_after?: number
+          box_before?: number
+          card_id?: string
+          created_at?: string
+          feedback?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_reviews_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_members: {
         Row: {
           class_id: string

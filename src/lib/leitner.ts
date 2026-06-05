@@ -91,5 +91,14 @@ export async function recordFeedback(
   );
   if (error) console.error("[leitner] upsert failed", error);
 
+  const { error: logErr } = await supabase.from("card_reviews").insert({
+    card_id: cardId,
+    student_id: userId,
+    feedback,
+    box_before: Math.min(Math.max(currentBox, 1), 5),
+    box_after: next.box_number,
+  });
+  if (logErr) console.error("[leitner] review log failed", logErr);
+
   return next;
 }

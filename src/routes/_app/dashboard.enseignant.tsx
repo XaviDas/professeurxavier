@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Plus, Sparkles, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -262,12 +262,16 @@ function DashboardEnseignant() {
             <ul className="divide-y divide-border">
               {classes.map((c) => (
                 <li key={c.id} className="flex items-center justify-between py-4">
-                  <div>
-                    <p className="font-medium">{c.name}</p>
+                  <Link
+                    to="/enseignant/classe/$id"
+                    params={{ id: c.id }}
+                    className="group flex-1"
+                  >
+                    <p className="font-medium group-hover:text-accent">{c.name}</p>
                     <p className="text-xs text-muted-foreground/70">
                       {c.students} élève{c.students > 1 ? "s" : ""} · {c.cards} cartes
                     </p>
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-background px-3 py-1.5 font-mono text-sm">
                       {c.invite_code}

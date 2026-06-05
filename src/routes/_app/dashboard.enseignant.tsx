@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Plus, Sparkles, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

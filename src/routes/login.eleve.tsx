@@ -9,6 +9,8 @@ export const Route = createFileRoute("/login/eleve")({
   component: LoginEleve,
 });
 
+const DEFAULT_PASSWORD = "Francais2025";
+
 function LoginEleve() {
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [fullName, setFullName] = useState("");
@@ -31,15 +33,31 @@ function LoginEleve() {
         }
         const { data, error } = await supabase.auth.signUp({
           email,
-          password,
+          password: DEFAULT_PASSWORD,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard/eleve`,
-            data: { full_name: fullName, role: "eleve" },
+            data: {
+              full_name: fullName,
+              role: "eleve",
+              must_change_password: true,
+            },
           },
         });
         if (error || !data.user) {
           toast.error(error?.message ?? "Inscription impossible");
           return;
+        }
+        // If email confirmation is disabled, signUp returns an active session.
+        // If a session isn't returned (confirmation required), sign in explicitly.
+        if (!data.session) {
+          const { error: signInErr } = await supabase.auth.signInWithPassword({
+            email,
+            password: DEFAULT_PASSWORD,
+          });
+          if (signInErr) {
+            toast.error(signInErr.message);
+            return;
+          }
         }
         const { error: joinErr } = await supabase.rpc("join_class_by_code", {
           _code: code,
@@ -128,24 +146,31 @@ function LoginEleve() {
               onChange={setEmail}
               required
             />
-            <Field
-              label="Mot de passe"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={setPassword}
-              required
-            />
-            {tab === "signup" && (
+            {tab === "signin" && (
               <Field
-                label="Code d'invitation de la classe"
-                type="text"
-                placeholder="Ex. A88C436B"
-                value={inviteCode}
-                onChange={setInviteCode}
+                label="Mot de passe"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={setPassword}
                 required
-                mono
               />
+            )}
+            {tab === "signup" && (
+              <>
+                <Field
+                  label="Code d'invitation de la classe"
+                  type="text"
+                  placeholder="Ex. A88C436B"
+                  value={inviteCode}
+                  onChange={setInviteCode}
+                  required
+                  mono
+                />
+                <p className="rounded-md border border-dashed border-border bg-card/30 px-3 py-2.5 text-xs text-muted-foreground/80">
+                  Un mot de passe par défaut <span className="font-mono text-foreground">Francais2025</span> te sera attribué. Tu pourras le changer après ta première connexion.
+                </p>
+              </>
             )}
 
             <button

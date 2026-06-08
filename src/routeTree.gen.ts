@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginEnseignantRouteImport } from './routes/login.enseignant'
 import { Route as LoginEleveRouteImport } from './routes/login.eleve'
 import { Route as AppSessionRouteImport } from './routes/_app/session'
+import { Route as AppEleveMotDePasseRouteImport } from './routes/_app/eleve.mot-de-passe'
 import { Route as AppDashboardEnseignantRouteImport } from './routes/_app/dashboard.enseignant'
 import { Route as AppDashboardEleveRouteImport } from './routes/_app/dashboard.eleve'
 import { Route as AppEnseignantClasseIdRouteImport } from './routes/_app/enseignant.classe.$id'
@@ -42,6 +43,11 @@ const AppSessionRoute = AppSessionRouteImport.update({
   path: '/session',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEleveMotDePasseRoute = AppEleveMotDePasseRouteImport.update({
+  id: '/eleve/mot-de-passe',
+  path: '/eleve/mot-de-passe',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardEnseignantRoute = AppDashboardEnseignantRouteImport.update({
   id: '/dashboard/enseignant',
   path: '/dashboard/enseignant',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/login/enseignant': typeof LoginEnseignantRoute
   '/dashboard/eleve': typeof AppDashboardEleveRoute
   '/dashboard/enseignant': typeof AppDashboardEnseignantRoute
+  '/eleve/mot-de-passe': typeof AppEleveMotDePasseRoute
   '/enseignant/classe/$id': typeof AppEnseignantClasseIdRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/login/enseignant': typeof LoginEnseignantRoute
   '/dashboard/eleve': typeof AppDashboardEleveRoute
   '/dashboard/enseignant': typeof AppDashboardEnseignantRoute
+  '/eleve/mot-de-passe': typeof AppEleveMotDePasseRoute
   '/enseignant/classe/$id': typeof AppEnseignantClasseIdRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/login/enseignant': typeof LoginEnseignantRoute
   '/_app/dashboard/eleve': typeof AppDashboardEleveRoute
   '/_app/dashboard/enseignant': typeof AppDashboardEnseignantRoute
+  '/_app/eleve/mot-de-passe': typeof AppEleveMotDePasseRoute
   '/_app/enseignant/classe/$id': typeof AppEnseignantClasseIdRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/login/enseignant'
     | '/dashboard/eleve'
     | '/dashboard/enseignant'
+    | '/eleve/mot-de-passe'
     | '/enseignant/classe/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/login/enseignant'
     | '/dashboard/eleve'
     | '/dashboard/enseignant'
+    | '/eleve/mot-de-passe'
     | '/enseignant/classe/$id'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/login/enseignant'
     | '/_app/dashboard/eleve'
     | '/_app/dashboard/enseignant'
+    | '/_app/eleve/mot-de-passe'
     | '/_app/enseignant/classe/$id'
   fileRoutesById: FileRoutesById
 }
@@ -162,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSessionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/eleve/mot-de-passe': {
+      id: '/_app/eleve/mot-de-passe'
+      path: '/eleve/mot-de-passe'
+      fullPath: '/eleve/mot-de-passe'
+      preLoaderRoute: typeof AppEleveMotDePasseRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard/enseignant': {
       id: '/_app/dashboard/enseignant'
       path: '/dashboard/enseignant'
@@ -190,6 +209,7 @@ interface AppRouteChildren {
   AppSessionRoute: typeof AppSessionRoute
   AppDashboardEleveRoute: typeof AppDashboardEleveRoute
   AppDashboardEnseignantRoute: typeof AppDashboardEnseignantRoute
+  AppEleveMotDePasseRoute: typeof AppEleveMotDePasseRoute
   AppEnseignantClasseIdRoute: typeof AppEnseignantClasseIdRoute
 }
 
@@ -197,6 +217,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSessionRoute: AppSessionRoute,
   AppDashboardEleveRoute: AppDashboardEleveRoute,
   AppDashboardEnseignantRoute: AppDashboardEnseignantRoute,
+  AppEleveMotDePasseRoute: AppEleveMotDePasseRoute,
   AppEnseignantClasseIdRoute: AppEnseignantClasseIdRoute,
 }
 
@@ -211,3 +232,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

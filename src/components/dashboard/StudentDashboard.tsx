@@ -90,7 +90,7 @@ export function StudentDashboard() {
           </p>
           <div className="mt-4 flex gap-2">
             <input
-              placeholder="FRA-XXX"
+              placeholder="Ex. A88C436B"
               className="flex-1 rounded-md border border-input bg-background px-3 py-2.5 font-mono uppercase outline-none focus:ring-2 focus:ring-ring"
             />
             <button className="rounded-md bg-foreground px-4 text-background hover:opacity-90">

@@ -12,7 +12,9 @@ interface DashState {
   name: string;
   className: string | null;
   cardsToday: number;
+  mustChangePassword: boolean;
 }
+
 
 function DashboardEleve() {
   const [state, setState] = useState<DashState>({
@@ -20,7 +22,9 @@ function DashboardEleve() {
     name: "",
     className: null,
     cardsToday: 0,
+    mustChangePassword: false,
   });
+
 
   useEffect(() => {
     let mounted = true;
@@ -56,7 +60,9 @@ function DashboardEleve() {
         name: (profile?.full_name || user.email || "élève").split(" ")[0],
         className: (membership?.classes as any)?.name ?? null,
         cardsToday: count ?? 0,
+        mustChangePassword: user.user_metadata?.must_change_password === true,
       });
+
     })();
     return () => {
       mounted = false;
@@ -66,9 +72,22 @@ function DashboardEleve() {
   return (
     <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center bg-background px-6 py-16 text-foreground">
       <div className="w-full max-w-md text-center">
+        {state.mustChangePassword && !state.loading && (
+          <div className="mb-8 rounded-md border border-border bg-card/40 px-4 py-3 text-left text-xs text-muted-foreground/80">
+            C'est votre première connexion. Nous vous recommandons de{" "}
+            <Link
+              to="/eleve/mot-de-passe"
+              className="text-foreground underline underline-offset-2 hover:text-accent"
+            >
+              changer votre mot de passe
+            </Link>
+            .
+          </div>
+        )}
         <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60">
           Espace Élève
         </span>
+
         <h1 className="mt-3 font-display text-5xl">
           {state.loading ? "…" : `Bonjour, ${state.name}`}
         </h1>

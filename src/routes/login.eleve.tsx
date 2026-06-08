@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/login/eleve")({
   head: () => ({ meta: [{ title: "Connexion Élève — Professeur Xavier" }] }),
@@ -9,11 +11,61 @@ export const Route = createFileRoute("/login/eleve")({
 
 function LoginEleve() {
   const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/dashboard/eleve" });
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (tab === "signup") {
+        const code = inviteCode.trim().toUpperCase();
+        if (!code) {
+          toast.error("Code d'invitation requis");
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard/eleve`,
+            data: { full_name: fullName, role: "eleve" },
+          },
+        });
+        if (error || !data.user) {
+          toast.error(error?.message ?? "Inscription impossible");
+          return;
+        }
+        const { error: joinErr } = await supabase.rpc("join_class_by_code", {
+          _code: code,
+        });
+        if (joinErr) {
+          toast.error(`Inscription créée, mais code invalide : ${joinErr.message}`);
+          return;
+        }
+        toast.success("Compte créé !");
+        navigate({ to: "/dashboard/eleve" });
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error || !data.user) {
+          toast.error(error?.message ?? "Identifiants invalides");
+          return;
+        }
+        navigate({ to: "/dashboard/eleve" });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,9 +88,9 @@ function LoginEleve() {
             </p>
           </div>
 
-          {/* Tabs */}
           <div className="mb-6 flex rounded-md border border-border bg-card/50 p-1 text-sm">
             <button
+              type="button"
               onClick={() => setTab("signin")}
               className={`flex-1 rounded px-3 py-2 transition-colors ${
                 tab === "signin" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
@@ -47,6 +99,7 @@ function LoginEleve() {
               Se connecter
             </button>
             <button
+              type="button"
               onClick={() => setTab("signup")}
               className={`flex-1 rounded px-3 py-2 transition-colors ${
                 tab === "signup" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
@@ -58,24 +111,49 @@ function LoginEleve() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {tab === "signup" && (
-              <Field label="Nom complet" type="text" placeholder="Ex. Lucas Silva" />
+              <Field
+                label="Nom complet"
+                type="text"
+                placeholder="Ex. Lucas Silva"
+                value={fullName}
+                onChange={setFullName}
+                required
+              />
             )}
-            <Field label="Email" type="email" placeholder="vous@exemple.com" />
-            <Field label="Mot de passe" type="password" placeholder="••••••••" />
+            <Field
+              label="Email"
+              type="email"
+              placeholder="vous@exemple.com"
+              value={email}
+              onChange={setEmail}
+              required
+            />
+            <Field
+              label="Mot de passe"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={setPassword}
+              required
+            />
             {tab === "signup" && (
               <Field
                 label="Code d'invitation de la classe"
                 type="text"
-                placeholder="FRA-XXX"
+                placeholder="Ex. A88C436B"
+                value={inviteCode}
+                onChange={setInviteCode}
+                required
                 mono
               />
             )}
 
             <button
               type="submit"
-              className="mt-2 w-full rounded-md bg-foreground py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+              disabled={loading}
+              className="mt-2 w-full rounded-md bg-foreground py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {tab === "signin" ? "Se connecter" : "Créer mon compte"}
+              {loading ? "…" : tab === "signin" ? "Se connecter" : "Créer mon compte"}
             </button>
           </form>
         </div>
@@ -92,11 +170,17 @@ function Field({
   label,
   type,
   placeholder,
+  value,
+  onChange,
+  required,
   mono,
 }: {
   label: string;
   type: string;
   placeholder?: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
   mono?: boolean;
 }) {
   return (
@@ -106,6 +190,9 @@ function Field({
       </span>
       <input
         type={type}
+        required={required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={`w-full rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent ${
           mono ? "font-mono uppercase tracking-wider" : ""

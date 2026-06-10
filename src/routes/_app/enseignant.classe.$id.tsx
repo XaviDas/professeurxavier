@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Trash2, Users, Layers, Copy, Download, BookOpen } from "lucide-react";
+import { ArrowLeft, Trash2, Users, Layers, Copy, Download, BookOpen, Flame, Moon, X } from "lucide-react";
 import {
   CartesianGrid,
   Legend,
@@ -58,6 +58,19 @@ function ClasseDetailPage() {
   const [progress, setProgress] = useState<Progress[]>([]);
   const [studentNames, setStudentNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [difficultDialog, setDifficultDialog] = useState<{
+    student: string;
+    items: { card: Flashcard; failed: number }[];
+  } | null>(null);
+
+  function copyDifficult() {
+    if (!difficultDialog) return;
+    const text = difficultDialog.items
+      .map((it) => `${it.card.word_fr} — ${it.card.word_pt}`)
+      .join("\n");
+    navigator.clipboard.writeText(text);
+    toast.success(`${difficultDialog.items.length} mots copiés.`);
+  }
 
   async function load() {
     setLoading(true);
@@ -143,20 +156,75 @@ function ClasseDetailPage() {
     return map;
   }, [classCards, reviews]);
 
+  const cardById = useMemo(() => {
+    const m = new Map<string, Flashcard>();
+    for (const c of cards) m.set(c.id, c);
+    return m;
+  }, [cards]);
+
   const studentStats = useMemo(() => {
+    const now = Date.now();
+    const DAY = 86400000;
     return students.map((s) => {
       const own = reviews.filter((r) => r.student_id === s.id);
-      const cardsSeen = new Set(own.map((r) => r.card_id)).size;
-      const good = own.filter((r) => r.feedback === "easy" || r.feedback === "medium").length;
       const total = own.length;
-      const scoreAvg = total ? Math.round((good / total) * 100) : 0;
-      const boxes = progress.filter((p) => p.student_id === s.id).map((p) => p.box_number);
-      const boxAvg = boxes.length
-        ? (boxes.reduce((a, b) => a + b, 0) / boxes.length).toFixed(1)
-        : "—";
-      return { ...s, cardsSeen, scoreAvg, boxAvg, total };
+
+      // Mastered: cards in box 4-5 (class cards only — match table scope)
+      const mastered = progress.filter(
+        (p) => p.student_id === s.id && p.box_number >= 4,
+      ).length;
+      const totalCards = progress.filter((p) => p.student_id === s.id).length;
+
+      // Difficult words: per-card majority of forgot/hard
+      const byCard = new Map<string, Review[]>();
+      for (const r of own) {
+        if (!byCard.has(r.card_id)) byCard.set(r.card_id, []);
+        byCard.get(r.card_id)!.push(r);
+      }
+      const difficult: { card: Flashcard; failed: number }[] = [];
+      byCard.forEach((rs, cardId) => {
+        const bad = rs.filter((r) => r.feedback === "forgot" || r.feedback === "hard").length;
+        if (bad > rs.length / 2 && bad > 0) {
+          const card = cardById.get(cardId);
+          if (card) difficult.push({ card, failed: bad });
+        }
+      });
+      difficult.sort((a, b) => b.failed - a.failed);
+
+      // Last review + days since
+      const lastTs = own.length
+        ? Math.max(...own.map((r) => new Date(r.created_at).getTime()))
+        : 0;
+      const daysSince = lastTs ? Math.floor((now - lastTs) / DAY) : Infinity;
+      let lastLabel = "Jamais";
+      if (lastTs) {
+        if (daysSince <= 0) lastLabel = "Aujourd'hui";
+        else if (daysSince === 1) lastLabel = "Hier";
+        else lastLabel = `Il y a ${daysSince} jours`;
+      }
+
+      let regularity: "regular" | "irregular" | "absent" = "absent";
+      if (daysSince <= 2) regularity = "regular";
+      else if (daysSince <= 5) regularity = "irregular";
+
+      // Streak: consecutive days up to today (or yesterday) with at least 1 review
+      const daysSet = new Set(own.map((r) => r.created_at.slice(0, 10)));
+      let streak = 0;
+      const cursor = new Date();
+      cursor.setHours(0, 0, 0, 0);
+      // allow today missing if last review was yesterday
+      if (!daysSet.has(cursor.toISOString().slice(0, 10))) {
+        cursor.setTime(cursor.getTime() - DAY);
+      }
+      while (daysSet.has(cursor.toISOString().slice(0, 10))) {
+        streak += 1;
+        cursor.setTime(cursor.getTime() - DAY);
+      }
+
+      return { ...s, total, mastered, totalCards, difficult, lastLabel, regularity, streak };
     });
-  }, [students, reviews, progress]);
+  }, [students, reviews, progress, cardById]);
+
 
   const chartData = useMemo(() => {
     if (!reviews.length) return [];
@@ -378,40 +446,72 @@ function ClasseDetailPage() {
                 <table className="w-full text-sm">
                   <thead className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
                     <tr className="border-b border-border">
-                      <th className="py-2 pr-4">Nom</th>
-                      <th className="py-2 pr-4">Cartes vues</th>
-                      <th className="py-2 pr-4">Score moyen</th>
-                      <th className="py-2 pr-4">Boîte moyenne</th>
-                      <th className="py-2">Révisions</th>
+                      <th className="py-2 pr-4">Élève</th>
+                      <th className="py-2 pr-4">Régularité</th>
+                      <th className="py-2 pr-4">Cartes maîtrisées</th>
+                      <th className="py-2 pr-4">Mots difficiles</th>
+                      <th className="py-2 pr-4">Streak</th>
+                      <th className="py-2">Dernière révision</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {studentStats.map((s) => (
-                      <tr key={s.id} className="border-b border-border/60">
-                        <td className="py-2 pr-4 font-medium">{s.full_name}</td>
-                        <td className="py-2 pr-4">{s.cardsSeen}</td>
-                        <td className="py-2 pr-4">
-                          <span
-                            className={
-                              s.scoreAvg >= 66
-                                ? "text-[#2a9d8f]"
-                                : s.scoreAvg >= 33
-                                  ? "text-[#f4a261]"
-                                  : "text-[#e63946]"
-                            }
-                          >
-                            {s.total ? `${s.scoreAvg}%` : "—"}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-4">{s.boxAvg} / 5</td>
-                        <td className="py-2 text-muted-foreground">{s.total}</td>
-                      </tr>
-                    ))}
+                    {studentStats.map((s) => {
+                      const reg =
+                        s.regularity === "regular"
+                          ? { dot: "🟢", label: "Régulier", cls: "text-[#2a9d8f]" }
+                          : s.regularity === "irregular"
+                            ? { dot: "🟡", label: "Irrégulier", cls: "text-[#f4a261]" }
+                            : { dot: "🔴", label: "Absent", cls: "text-[#e63946]" };
+                      return (
+                        <tr key={s.id} className="border-b border-border/60">
+                          <td className="py-2 pr-4 font-medium">{s.full_name}</td>
+                          <td className="py-2 pr-4">
+                            <span className={`inline-flex items-center gap-1.5 ${reg.cls}`}>
+                              <span>{reg.dot}</span>
+                              <span className="text-xs">{reg.label}</span>
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4 font-mono text-xs">
+                            {s.mastered}/{s.totalCards}
+                          </td>
+                          <td className="py-2 pr-4">
+                            {s.difficult.length > 0 ? (
+                              <button
+                                onClick={() =>
+                                  setDifficultDialog({
+                                    student: s.full_name,
+                                    items: s.difficult,
+                                  })
+                                }
+                                className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:border-[#e63946] hover:text-[#e63946]"
+                              >
+                                {s.difficult.length} mot{s.difficult.length > 1 ? "s" : ""}
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="py-2 pr-4">
+                            {s.streak > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-[#f4a261]">
+                                <Flame className="h-3.5 w-3.5" /> {s.streak}j
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                <Moon className="h-3.5 w-3.5" /> 0j
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 text-muted-foreground">{s.lastLabel}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </section>
+
 
           <section className="rounded-xl border border-border bg-card/60 p-6">
             <h2 className="mb-4 font-display text-2xl">Évolution du score</h2>
@@ -454,6 +554,60 @@ function ClasseDetailPage() {
           </section>
         </>
       )}
+
+      {difficultDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setDifficultDialog(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                  Mots difficiles
+                </span>
+                <h3 className="mt-1 font-display text-xl">{difficultDialog.student}</h3>
+              </div>
+              <button
+                onClick={() => setDifficultDialog(null)}
+                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mb-4 max-h-80 overflow-y-auto rounded-md border border-border">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr className="border-b border-border">
+                    <th className="py-2 px-3">Français</th>
+                    <th className="py-2 px-3">Portugais</th>
+                    <th className="py-2 px-3 text-right">Raté</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {difficultDialog.items.map((it) => (
+                    <tr key={it.card.id} className="border-b border-border/60">
+                      <td className="py-2 px-3">{it.card.word_fr}</td>
+                      <td className="py-2 px-3 italic text-[#e63946]">{it.card.word_pt}</td>
+                      <td className="py-2 px-3 text-right font-mono text-xs">{it.failed}×</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              onClick={copyDifficult}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs hover:border-[#4361ee]"
+            >
+              <Copy className="h-3.5 w-3.5" /> Copier la liste
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

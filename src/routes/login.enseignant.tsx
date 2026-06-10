@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PasswordField } from "./login.eleve";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login/enseignant")({
@@ -13,6 +14,7 @@ function LoginEnseignant() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,19 +79,13 @@ function LoginEnseignant() {
                 className="w-full rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </label>
-            <label className="block">
-              <span className="mb-1.5 block text-[10px] uppercase tracking-widest text-muted-foreground/80">
-                Mot de passe
-              </span>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent"
-              />
-            </label>
+            <PasswordField
+              label="Mot de passe"
+              value={password}
+              onChange={setPassword}
+              show={showPwd}
+              onToggle={() => setShowPwd((v) => !v)}
+            />
 
             <button
               type="submit"

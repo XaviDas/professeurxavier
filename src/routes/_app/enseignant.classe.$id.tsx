@@ -58,6 +58,19 @@ function ClasseDetailPage() {
   const [progress, setProgress] = useState<Progress[]>([]);
   const [studentNames, setStudentNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [difficultDialog, setDifficultDialog] = useState<{
+    student: string;
+    items: { card: Flashcard; failed: number }[];
+  } | null>(null);
+
+  function copyDifficult() {
+    if (!difficultDialog) return;
+    const text = difficultDialog.items
+      .map((it) => `${it.card.word_fr} — ${it.card.word_pt}`)
+      .join("\n");
+    navigator.clipboard.writeText(text);
+    toast.success(`${difficultDialog.items.length} mots copiés.`);
+  }
 
   async function load() {
     setLoading(true);

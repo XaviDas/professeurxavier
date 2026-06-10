@@ -174,6 +174,7 @@ export type Database = {
           class_id: string
           created_at: string
           id: string
+          owner_id: string | null
           word_fr: string
           word_pt: string
         }
@@ -181,6 +182,7 @@ export type Database = {
           class_id: string
           created_at?: string
           id?: string
+          owner_id?: string | null
           word_fr: string
           word_pt: string
         }
@@ -188,6 +190,7 @@ export type Database = {
           class_id?: string
           created_at?: string
           id?: string
+          owner_id?: string | null
           word_fr?: string
           word_pt?: string
         }

@@ -143,20 +143,75 @@ function ClasseDetailPage() {
     return map;
   }, [classCards, reviews]);
 
+  const cardById = useMemo(() => {
+    const m = new Map<string, Flashcard>();
+    for (const c of cards) m.set(c.id, c);
+    return m;
+  }, [cards]);
+
   const studentStats = useMemo(() => {
+    const now = Date.now();
+    const DAY = 86400000;
     return students.map((s) => {
       const own = reviews.filter((r) => r.student_id === s.id);
-      const cardsSeen = new Set(own.map((r) => r.card_id)).size;
-      const good = own.filter((r) => r.feedback === "easy" || r.feedback === "medium").length;
       const total = own.length;
-      const scoreAvg = total ? Math.round((good / total) * 100) : 0;
-      const boxes = progress.filter((p) => p.student_id === s.id).map((p) => p.box_number);
-      const boxAvg = boxes.length
-        ? (boxes.reduce((a, b) => a + b, 0) / boxes.length).toFixed(1)
-        : "—";
-      return { ...s, cardsSeen, scoreAvg, boxAvg, total };
+
+      // Mastered: cards in box 4-5 (class cards only — match table scope)
+      const mastered = progress.filter(
+        (p) => p.student_id === s.id && p.box_number >= 4,
+      ).length;
+      const totalCards = progress.filter((p) => p.student_id === s.id).length;
+
+      // Difficult words: per-card majority of forgot/hard
+      const byCard = new Map<string, Review[]>();
+      for (const r of own) {
+        if (!byCard.has(r.card_id)) byCard.set(r.card_id, []);
+        byCard.get(r.card_id)!.push(r);
+      }
+      const difficult: { card: Flashcard; failed: number }[] = [];
+      byCard.forEach((rs, cardId) => {
+        const bad = rs.filter((r) => r.feedback === "forgot" || r.feedback === "hard").length;
+        if (bad > rs.length / 2 && bad > 0) {
+          const card = cardById.get(cardId);
+          if (card) difficult.push({ card, failed: bad });
+        }
+      });
+      difficult.sort((a, b) => b.failed - a.failed);
+
+      // Last review + days since
+      const lastTs = own.length
+        ? Math.max(...own.map((r) => new Date(r.created_at).getTime()))
+        : 0;
+      const daysSince = lastTs ? Math.floor((now - lastTs) / DAY) : Infinity;
+      let lastLabel = "Jamais";
+      if (lastTs) {
+        if (daysSince <= 0) lastLabel = "Aujourd'hui";
+        else if (daysSince === 1) lastLabel = "Hier";
+        else lastLabel = `Il y a ${daysSince} jours`;
+      }
+
+      let regularity: "regular" | "irregular" | "absent" = "absent";
+      if (daysSince <= 2) regularity = "regular";
+      else if (daysSince <= 5) regularity = "irregular";
+
+      // Streak: consecutive days up to today (or yesterday) with at least 1 review
+      const daysSet = new Set(own.map((r) => r.created_at.slice(0, 10)));
+      let streak = 0;
+      const cursor = new Date();
+      cursor.setHours(0, 0, 0, 0);
+      // allow today missing if last review was yesterday
+      if (!daysSet.has(cursor.toISOString().slice(0, 10))) {
+        cursor.setTime(cursor.getTime() - DAY);
+      }
+      while (daysSet.has(cursor.toISOString().slice(0, 10))) {
+        streak += 1;
+        cursor.setTime(cursor.getTime() - DAY);
+      }
+
+      return { ...s, total, mastered, totalCards, difficult, lastLabel, regularity, streak };
     });
-  }, [students, reviews, progress]);
+  }, [students, reviews, progress, cardById]);
+
 
   const chartData = useMemo(() => {
     if (!reviews.length) return [];

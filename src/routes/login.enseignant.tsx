@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PasswordField } from "./login.eleve";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login/enseignant")({

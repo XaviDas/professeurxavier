@@ -1,24 +1,36 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type Search = { confirmed?: string };
+
 export const Route = createFileRoute("/login/eleve")({
   head: () => ({ meta: [{ title: "Connexion Élève — Professeur Xavier" }] }),
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    confirmed: typeof s.confirmed === "string" ? s.confirmed : undefined,
+  }),
   component: LoginEleve,
 });
 
-const DEFAULT_PASSWORD = "Francais2025";
-
 function LoginEleve() {
+  const search = useSearch({ from: "/login/eleve" }) as Search;
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (search.confirmed === "1") {
+      toast.success("Compte confirmé, vous pouvez vous connecter.");
+    }
+  }, [search.confirmed]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,51 +43,48 @@ function LoginEleve() {
           toast.error("Code d'invitation requis");
           return;
         }
+        if (password.length < 8) {
+          toast.error("Mot de passe trop court (8 caractères minimum)");
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
-          password: DEFAULT_PASSWORD,
+          password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard/eleve`,
+            emailRedirectTo: `${window.location.origin}/login/eleve?confirmed=1`,
             data: {
               full_name: fullName,
-              role: "eleve",
-              must_change_password: true,
+              invite_code: code,
             },
           },
         });
-        if (error || !data.user) {
-          toast.error(error?.message ?? "Inscription impossible");
+        if (error) {
+          toast.error(error.message);
           return;
         }
-        // If email confirmation is disabled, signUp returns an active session.
-        // If a session isn't returned (confirmation required), sign in explicitly.
-        if (!data.session) {
-          const { error: signInErr } = await supabase.auth.signInWithPassword({
-            email,
-            password: DEFAULT_PASSWORD,
-          });
-          if (signInErr) {
-            toast.error(signInErr.message);
+        if (data.session) {
+          // Email confirmation disabled — join class immediately.
+          const { error: joinErr } = await supabase.rpc("join_class_by_code", { _code: code });
+          if (joinErr) {
+            toast.error(`Compte créé, mais code invalide : ${joinErr.message}`);
             return;
           }
+          toast.success("Compte créé !");
+          navigate({ to: "/dashboard/eleve" });
+        } else {
+          setPendingEmail(email);
+          toast.success("Email de confirmation envoyé.");
         }
-        const { error: joinErr } = await supabase.rpc("join_class_by_code", {
-          _code: code,
-        });
-        if (joinErr) {
-          toast.error(`Inscription créée, mais code invalide : ${joinErr.message}`);
-          return;
-        }
-        toast.success("Compte créé !");
-        navigate({ to: "/dashboard/eleve" });
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error || !data.user) {
           toast.error(error?.message ?? "Identifiants invalides");
           return;
+        }
+        // Best-effort: ensure the user joined their class (in case sign-up was via email confirmation).
+        const code = (data.user.user_metadata?.invite_code as string | undefined)?.trim().toUpperCase();
+        if (code) {
+          await supabase.rpc("join_class_by_code", { _code: code });
         }
         navigate({ to: "/dashboard/eleve" });
       }
@@ -86,13 +95,47 @@ function LoginEleve() {
     }
   };
 
+  if (pendingEmail) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background text-foreground">
+        <header className="px-6 pt-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-xs text-muted-foreground/70 hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Retour
+          </Link>
+        </header>
+        <main className="flex flex-1 items-center justify-center px-6">
+          <div className="w-full max-w-sm text-center">
+            <MailCheck className="mx-auto mb-4 h-10 w-10 text-accent" />
+            <h1 className="font-display text-2xl">Vérifie ta boîte mail</h1>
+            <p className="mt-3 text-sm text-muted-foreground/80">
+              Un email de confirmation a été envoyé à{" "}
+              <span className="font-mono text-foreground">{pendingEmail}</span>.
+              <br />
+              Clique sur le lien pour activer ton compte avant de te connecter.
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground/60">
+              Pense à vérifier le dossier spam si tu ne le trouves pas.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingEmail(null);
+                setTab("signin");
+              }}
+              className="mt-6 w-full rounded-md bg-foreground py-3 text-sm font-medium text-background hover:opacity-90"
+            >
+              Aller à la connexion
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="px-6 pt-6">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-xs text-muted-foreground/70 hover:text-foreground"
-        >
+        <Link to="/" className="inline-flex items-center gap-2 text-xs text-muted-foreground/70 hover:text-foreground">
           <ArrowLeft className="h-3.5 w-3.5" /> Retour
         </Link>
       </header>
@@ -146,31 +189,24 @@ function LoginEleve() {
               onChange={setEmail}
               required
             />
-            {tab === "signin" && (
-              <Field
-                label="Mot de passe"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={setPassword}
-                required
-              />
-            )}
+            <PasswordField
+              label="Mot de passe"
+              value={password}
+              onChange={setPassword}
+              show={showPwd}
+              onToggle={() => setShowPwd((v) => !v)}
+              placeholder={tab === "signup" ? "8 caractères minimum" : "••••••••"}
+            />
             {tab === "signup" && (
-              <>
-                <Field
-                  label="Code d'invitation de la classe"
-                  type="text"
-                  placeholder="Ex. A88C436B"
-                  value={inviteCode}
-                  onChange={setInviteCode}
-                  required
-                  mono
-                />
-                <p className="rounded-md border border-dashed border-border bg-card/30 px-3 py-2.5 text-xs text-muted-foreground/80">
-                  Un mot de passe par défaut <span className="font-mono text-foreground">Francais2025</span> te sera attribué. Tu pourras le changer après ta première connexion.
-                </p>
-              </>
+              <Field
+                label="Code d'invitation de la classe"
+                type="text"
+                placeholder="Ex. A88C436B"
+                value={inviteCode}
+                onChange={setInviteCode}
+                required
+                mono
+              />
             )}
 
             <button
@@ -210,9 +246,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[10px] uppercase tracking-widest text-muted-foreground/80">
-        {label}
-      </span>
+      <span className="mb-1.5 block text-[10px] uppercase tracking-widest text-muted-foreground/80">{label}</span>
       <input
         type={type}
         required={required}
@@ -223,6 +257,46 @@ function Field({
           mono ? "font-mono uppercase tracking-wider" : ""
         }`}
       />
+    </label>
+  );
+}
+
+export function PasswordField({
+  label,
+  value,
+  onChange,
+  show,
+  onToggle,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onToggle: () => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[10px] uppercase tracking-widest text-muted-foreground/80">{label}</span>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          required
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder ?? "••••••••"}
+          className="w-full rounded-md border border-border bg-card/40 px-3 py-2.5 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={show ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground/70 hover:text-foreground"
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
     </label>
   );
 }

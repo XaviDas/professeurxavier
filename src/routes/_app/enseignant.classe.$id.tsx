@@ -554,6 +554,60 @@ function ClasseDetailPage() {
           </section>
         </>
       )}
+
+      {difficultDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setDifficultDialog(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                  Mots difficiles
+                </span>
+                <h3 className="mt-1 font-display text-xl">{difficultDialog.student}</h3>
+              </div>
+              <button
+                onClick={() => setDifficultDialog(null)}
+                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mb-4 max-h-80 overflow-y-auto rounded-md border border-border">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr className="border-b border-border">
+                    <th className="py-2 px-3">Français</th>
+                    <th className="py-2 px-3">Portugais</th>
+                    <th className="py-2 px-3 text-right">Raté</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {difficultDialog.items.map((it) => (
+                    <tr key={it.card.id} className="border-b border-border/60">
+                      <td className="py-2 px-3">{it.card.word_fr}</td>
+                      <td className="py-2 px-3 italic text-[#e63946]">{it.card.word_pt}</td>
+                      <td className="py-2 px-3 text-right font-mono text-xs">{it.failed}×</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              onClick={copyDifficult}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs hover:border-[#4361ee]"
+            >
+              <Copy className="h-3.5 w-3.5" /> Copier la liste
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

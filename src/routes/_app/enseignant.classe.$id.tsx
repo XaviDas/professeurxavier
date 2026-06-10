@@ -433,40 +433,72 @@ function ClasseDetailPage() {
                 <table className="w-full text-sm">
                   <thead className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
                     <tr className="border-b border-border">
-                      <th className="py-2 pr-4">Nom</th>
-                      <th className="py-2 pr-4">Cartes vues</th>
-                      <th className="py-2 pr-4">Score moyen</th>
-                      <th className="py-2 pr-4">Boîte moyenne</th>
-                      <th className="py-2">Révisions</th>
+                      <th className="py-2 pr-4">Élève</th>
+                      <th className="py-2 pr-4">Régularité</th>
+                      <th className="py-2 pr-4">Cartes maîtrisées</th>
+                      <th className="py-2 pr-4">Mots difficiles</th>
+                      <th className="py-2 pr-4">Streak</th>
+                      <th className="py-2">Dernière révision</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {studentStats.map((s) => (
-                      <tr key={s.id} className="border-b border-border/60">
-                        <td className="py-2 pr-4 font-medium">{s.full_name}</td>
-                        <td className="py-2 pr-4">{s.cardsSeen}</td>
-                        <td className="py-2 pr-4">
-                          <span
-                            className={
-                              s.scoreAvg >= 66
-                                ? "text-[#2a9d8f]"
-                                : s.scoreAvg >= 33
-                                  ? "text-[#f4a261]"
-                                  : "text-[#e63946]"
-                            }
-                          >
-                            {s.total ? `${s.scoreAvg}%` : "—"}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-4">{s.boxAvg} / 5</td>
-                        <td className="py-2 text-muted-foreground">{s.total}</td>
-                      </tr>
-                    ))}
+                    {studentStats.map((s) => {
+                      const reg =
+                        s.regularity === "regular"
+                          ? { dot: "🟢", label: "Régulier", cls: "text-[#2a9d8f]" }
+                          : s.regularity === "irregular"
+                            ? { dot: "🟡", label: "Irrégulier", cls: "text-[#f4a261]" }
+                            : { dot: "🔴", label: "Absent", cls: "text-[#e63946]" };
+                      return (
+                        <tr key={s.id} className="border-b border-border/60">
+                          <td className="py-2 pr-4 font-medium">{s.full_name}</td>
+                          <td className="py-2 pr-4">
+                            <span className={`inline-flex items-center gap-1.5 ${reg.cls}`}>
+                              <span>{reg.dot}</span>
+                              <span className="text-xs">{reg.label}</span>
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4 font-mono text-xs">
+                            {s.mastered}/{s.totalCards}
+                          </td>
+                          <td className="py-2 pr-4">
+                            {s.difficult.length > 0 ? (
+                              <button
+                                onClick={() =>
+                                  setDifficultDialog({
+                                    student: s.full_name,
+                                    items: s.difficult,
+                                  })
+                                }
+                                className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:border-[#e63946] hover:text-[#e63946]"
+                              >
+                                {s.difficult.length} mot{s.difficult.length > 1 ? "s" : ""}
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="py-2 pr-4">
+                            {s.streak > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-[#f4a261]">
+                                <Flame className="h-3.5 w-3.5" /> {s.streak}j
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                <Moon className="h-3.5 w-3.5" /> 0j
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 text-muted-foreground">{s.lastLabel}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </section>
+
 
           <section className="rounded-xl border border-border bg-card/60 p-6">
             <h2 className="mb-4 font-display text-2xl">Évolution du score</h2>

@@ -30,7 +30,6 @@ function AppLayout() {
       const path = window.location.pathname;
       if (mustChange && path !== "/eleve/mot-de-passe") {
         navigate({ to: "/eleve/mot-de-passe" });
-        return;
       }
       setChecked(true);
     });

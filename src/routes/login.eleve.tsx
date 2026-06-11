@@ -84,7 +84,11 @@ function LoginEleve() {
         // Best-effort: ensure the user joined their class (in case sign-up was via email confirmation).
         const code = (data.user.user_metadata?.invite_code as string | undefined)?.trim().toUpperCase();
         if (code) {
-          await supabase.rpc("join_class_by_code", { _code: code });
+          const { error: joinErr } = await supabase.rpc("join_class_by_code", { _code: code });
+          if (joinErr) {
+            console.error("join_class_by_code failed:", joinErr.message);
+            toast.error("Impossible de rejoindre la classe. Vérifiez le code de classe.");
+          }
         }
         navigate({ to: "/dashboard/eleve" });
       }

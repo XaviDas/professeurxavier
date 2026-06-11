@@ -42,6 +42,9 @@ function DashboardEleve() {
   const [fr, setFr] = useState("");
   const [pt, setPt] = useState("");
   const [adding, setAdding] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   async function loadDashboard() {
     const { data: auth } = await supabase.auth.getUser();
@@ -100,6 +103,26 @@ function DashboardEleve() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, state.userId]);
 
+  async function joinClass(e: React.FormEvent) {
+    e.preventDefault();
+    const code = joinCode.trim().toUpperCase();
+    if (!code || joining) return;
+    setJoining(true);
+    setJoinError(null);
+    const { error } = await supabase.rpc("join_class_by_code", { _code: code });
+    setJoining(false);
+    if (error) {
+      console.error("join_class_by_code failed:", error.message);
+      setJoinError("Code de classe invalide");
+      toast.error("Code de classe invalide");
+      return;
+    }
+    toast.success("Classe rejointe.");
+    setJoinCode("");
+    setTab("revision");
+    await loadDashboard();
+  }
+
   async function addPersonal(e: React.FormEvent) {
     e.preventDefault();
     if (!fr.trim() || !pt.trim() || !state.classId || !state.userId) return;
@@ -157,6 +180,37 @@ function DashboardEleve() {
           <p className="mt-2 text-sm text-muted-foreground">{state.className}</p>
         )}
       </header>
+
+      {!state.loading && !state.classId && (
+        <form onSubmit={joinClass} className="mx-auto mt-10 max-w-sm rounded-xl border border-border bg-card p-6 text-left">
+          <h2 className="font-display text-2xl">Rejoindre une classe</h2>
+          <label className="mt-5 block">
+            <span className="mb-1.5 block text-[10px] uppercase tracking-widest text-muted-foreground/80">
+              Code de classe
+            </span>
+            <input
+              value={joinCode}
+              onChange={(e) => {
+                setJoinCode(e.target.value);
+                setJoinError(null);
+              }}
+              placeholder="Ex. A88C436B"
+              className="w-full rounded-md border border-border bg-background px-3 py-2.5 font-mono text-sm uppercase tracking-wider outline-none focus:border-[#4361ee] focus:ring-1 focus:ring-[#4361ee]"
+            />
+          </label>
+          {joinError && <p className="mt-2 text-sm text-destructive">{joinError}</p>}
+          <button
+            type="submit"
+            disabled={joining || !joinCode.trim()}
+            className="mt-5 inline-flex w-full items-center justify-center rounded-md bg-[#4361ee] px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {joining ? "Connexion…" : "Rejoindre"}
+          </button>
+        </form>
+      )}
+
+      {!state.loading && !state.classId ? null : (
+        <>
 
       {/* Tabs */}
       <div className="mt-10 flex justify-center gap-1 rounded-md border border-border bg-card p-1">
@@ -286,6 +340,8 @@ function DashboardEleve() {
             </>
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -314,8 +314,12 @@ function ClasseDetailPage() {
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>
-      ) : (
-        <>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+            <TabsTrigger value="journal">Journal de révisions</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">
           <section className="mb-10 rounded-xl border border-border bg-card/60 p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">

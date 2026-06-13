@@ -117,6 +117,11 @@ function DashboardEleve() {
       toast.error("Code de classe invalide");
       return;
     }
+    // Sauvegarder le code dans les métadonnées utilisateur pour les prochaines connexions
+    const { error: updateErr } = await supabase.auth.updateUser({ data: { invite_code: code } });
+    if (updateErr) {
+      console.error("updateUser failed:", updateErr.message);
+    }
     toast.success("Classe rejointe.");
     setJoinCode("");
     setTab("revision");

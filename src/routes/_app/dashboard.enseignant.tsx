@@ -286,42 +286,24 @@ function DashboardEnseignant() {
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
                       Inviter un élève
                     </p>
-                    <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
-                      <div className="flex items-center justify-between gap-2 rounded border border-border bg-background px-2.5 py-1.5">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground/60">Code de classe</p>
-                          <p className="font-mono text-sm">{c.invite_code}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(c.invite_code);
-                            toast.success("Code copié.");
-                          }}
-                          className="text-muted-foreground/70 hover:text-foreground"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded border border-border bg-background px-2.5 py-1.5">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground/60">Code de classe</p>
+                        <p className="font-mono text-sm">{c.invite_code}</p>
                       </div>
-                      <div className="flex items-center justify-between gap-2 rounded border border-border bg-background px-2.5 py-1.5">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground/60">Mot de passe par défaut</p>
-                          <p className="font-mono text-sm">Francais2025</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText("Francais2025");
-                            toast.success("Mot de passe copié.");
-                          }}
-                          className="text-muted-foreground/70 hover:text-foreground"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(c.invite_code);
+                          toast.success("Code copié.");
+                        }}
+                        className="text-muted-foreground/70 hover:text-foreground"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                     <p className="mt-2 text-[11px] text-muted-foreground/60">
-                      Communique ces deux informations à l'élève. Il pourra changer son mot de passe après sa première connexion.
+                      Communique le code de la classe à l'élève. Il devra définir son propre mot de passe lors de sa première connexion.
                     </p>
                   </div>
                 </li>

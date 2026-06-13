@@ -12,7 +12,15 @@ import {
   YAxis,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
+
+const RATING_META: Record<1 | 2 | 3 | 4, { dot: string; label: string; cls: string }> = {
+  1: { dot: "🔴", label: "Again", cls: "text-[#e63946]" },
+  2: { dot: "🟠", label: "Hard", cls: "text-[#f4a261]" },
+  3: { dot: "🟢", label: "Good", cls: "text-[#2a9d8f]" },
+  4: { dot: "🔵", label: "Easy", cls: "text-[#4361ee]" },
+};
 
 export const Route = createFileRoute("/_app/enseignant/classe/$id")({
   head: () => ({ meta: [{ title: "Détail de la classe" }] }),
@@ -307,7 +315,12 @@ function ClasseDetailPage() {
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>
       ) : (
-        <>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+            <TabsTrigger value="journal">Journal de révisions</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">
           <section className="mb-10 rounded-xl border border-border bg-card/60 p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -554,7 +567,16 @@ function ClasseDetailPage() {
               </div>
             )}
           </section>
-        </>
+          </TabsContent>
+
+          <TabsContent value="journal">
+            <JournalSection
+              reviews={reviews}
+              cardById={cardById}
+              students={students}
+            />
+          </TabsContent>
+        </Tabs>
       )}
 
       {difficultDialog && (
@@ -612,4 +634,135 @@ function ClasseDetailPage() {
     </div>
   );
 }
+
+function JournalSection({
+  reviews,
+  cardById,
+  students,
+}: {
+  reviews: Review[];
+  cardById: Map<string, Flashcard>;
+  students: Student[];
+}) {
+  const [studentId, setStudentId] = useState<string>(students[0]?.id ?? "");
+  const [days, setDays] = useState<number>(7);
+
+  useEffect(() => {
+    if (!studentId && students.length) setStudentId(students[0].id);
+  }, [students, studentId]);
+
+  const grouped = useMemo(() => {
+    if (!studentId) return [] as { day: string; items: Review[] }[];
+    const cutoff = Date.now() - days * 86400000;
+    const filtered = reviews
+      .filter((r) => r.student_id === studentId && new Date(r.created_at).getTime() >= cutoff)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    const map = new Map<string, Review[]>();
+    for (const r of filtered) {
+      const day = r.created_at.slice(0, 10);
+      if (!map.has(day)) map.set(day, []);
+      map.get(day)!.push(r);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([day, items]) => ({ day, items }));
+  }, [reviews, studentId, days]);
+
+  return (
+    <section className="rounded-xl border border-border bg-card/60 p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-2xl">Journal de révisions</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-xs uppercase tracking-wider text-muted-foreground">Élève</label>
+          <select
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          >
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.full_name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+            className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          >
+            <option value={7}>7 derniers jours</option>
+            <option value={14}>14 derniers jours</option>
+            <option value={30}>30 derniers jours</option>
+            <option value={365}>1 an</option>
+          </select>
+        </div>
+      </div>
+
+      {!studentId ? (
+        <p className="text-sm text-muted-foreground">Aucun élève inscrit.</p>
+      ) : grouped.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Aucune révision sur cette période.
+        </p>
+      ) : (
+        <div className="space-y-6">
+          {grouped.map(({ day, items }) => (
+            <div key={day}>
+              <h3 className="mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                {new Date(day).toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}{" "}
+                · {items.length} mot{items.length > 1 ? "s" : ""}
+              </h3>
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <tr className="border-b border-border">
+                      <th className="py-2 px-3">Français</th>
+                      <th className="py-2 px-3">Portugais</th>
+                      <th className="py-2 px-3">Note</th>
+                      <th className="py-2 px-3 text-right">Heure</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((r) => {
+                      const card = cardById.get(r.card_id);
+                      const meta = RATING_META[r.rating];
+                      return (
+                        <tr key={r.id} className="border-b border-border/60 last:border-0">
+                          <td className="py-2 px-3">{card?.word_fr ?? "—"}</td>
+                          <td className="py-2 px-3 italic text-[#e63946]">
+                            {card?.word_pt ?? "—"}
+                          </td>
+                          <td className={`py-2 px-3 ${meta.cls}`}>
+                            <span className="inline-flex items-center gap-1.5">
+                              <span>{meta.dot}</span>
+                              <span className="text-xs">
+                                {r.rating} · {meta.label}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono text-xs text-muted-foreground">
+                            {new Date(r.created_at).toLocaleTimeString("fr-FR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 

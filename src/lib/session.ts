@@ -1,5 +1,6 @@
-// Récupère les cartes dues pour l'élève connecté, plafonnées à 25.
+// Récupère les cartes dues (FSRS) pour l'élève connecté, plafonnées à 25.
 import { supabase } from "@/integrations/supabase/client";
+import type { ProgressRow } from "@/lib/fsrs";
 
 export const DAILY_LIMIT = 25;
 
@@ -7,7 +8,7 @@ export interface SessionCard {
   id: string;
   pt: string;
   fr: string;
-  box: number;
+  progress: ProgressRow;
 }
 
 export async function fetchDueCards(): Promise<SessionCard[] | null> {
@@ -15,15 +16,16 @@ export async function fetchDueCards(): Promise<SessionCard[] | null> {
   const userId = auth.user?.id;
   if (!userId) return null;
 
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
+  const now = new Date().toISOString();
 
   const { data, error } = await supabase
     .from("card_progress")
-    .select("box_number, next_review_date, card_id, flashcards:card_id(id, word_pt, word_fr)")
+    .select(
+      "due, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review, card_id, flashcards:card_id(id, word_pt, word_fr)",
+    )
     .eq("student_id", userId)
-    .lte("next_review_date", today.toISOString())
-    .order("next_review_date", { ascending: true })
+    .lte("due", now)
+    .order("due", { ascending: true })
     .limit(DAILY_LIMIT);
 
   if (error) {
@@ -39,7 +41,17 @@ export async function fetchDueCards(): Promise<SessionCard[] | null> {
         id: f.id as string,
         pt: f.word_pt as string,
         fr: f.word_fr as string,
-        box: row.box_number as number,
+        progress: {
+          due: row.due,
+          stability: row.stability,
+          difficulty: row.difficulty,
+          elapsed_days: row.elapsed_days,
+          scheduled_days: row.scheduled_days,
+          reps: row.reps,
+          lapses: row.lapses,
+          state: row.state,
+          last_review: row.last_review,
+        } as ProgressRow,
       };
     })
     .filter((c): c is SessionCard => c !== null);

@@ -314,6 +314,7 @@ function ClasseDetailPage() {
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>
+      ) : (
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>

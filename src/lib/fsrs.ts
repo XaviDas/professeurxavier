@@ -1,7 +1,7 @@
 // Algorithme FSRS (Free Spaced Repetition Scheduler) via ts-fsrs.
 // Remplace l'ancien système de boîtes Leitner.
 
-import { fsrs, createEmptyCard, Rating, State, type Card as FsrsCard } from "ts-fsrs";
+import { fsrs, createEmptyCard, Rating, State, type Card as FsrsCard, type Grade } from "ts-fsrs";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ReviewRating = 1 | 2 | 3 | 4; // 1=Again, 2=Hard, 3=Good, 4=Easy
@@ -61,7 +61,7 @@ export async function recordReview(
   const card = rowToCard(current);
   const stateBefore = card.state as number;
   const now = new Date();
-  const result = scheduler.next(card, now, rating as Rating);
+  const result = scheduler.next(card, now, rating as unknown as Grade);
   const nextRow = cardToRow(result.card);
 
   const isUuid =

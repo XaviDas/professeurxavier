@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { X, Check } from "lucide-react";
-import { recordFeedback, type Feedback } from "@/lib/leitner";
+import { recordReview, type ReviewRating, type ProgressRow } from "@/lib/fsrs";
 import { fetchDueCards, DAILY_LIMIT, type SessionCard } from "@/lib/session";
 
 export const Route = createFileRoute("/_app/session")({
@@ -9,20 +9,32 @@ export const Route = createFileRoute("/_app/session")({
   component: SessionPage,
 });
 
-// Deck de démonstration (utilisé si pas de cartes réelles / hors connexion)
+// Carte de démonstration FSRS (état "new" par défaut)
+const newProgress = (): ProgressRow => ({
+  due: new Date().toISOString(),
+  stability: 0,
+  difficulty: 0,
+  elapsed_days: 0,
+  scheduled_days: 0,
+  reps: 0,
+  lapses: 0,
+  state: 0,
+  last_review: null,
+});
+
 const DEMO_DECK: SessionCard[] = [
-  { id: "demo-1", pt: "a padaria", fr: "la boulangerie", box: 1 },
-  { id: "demo-2", pt: "o bairro", fr: "le quartier", box: 1 },
-  { id: "demo-3", pt: "passear", fr: "se promener", box: 1 },
-  { id: "demo-4", pt: "daqui a pouco", fr: "tout à l'heure", box: 1 },
-  { id: "demo-5", pt: "no entanto", fr: "néanmoins", box: 1 },
+  { id: "demo-1", pt: "a padaria", fr: "la boulangerie", progress: newProgress() },
+  { id: "demo-2", pt: "o bairro", fr: "le quartier", progress: newProgress() },
+  { id: "demo-3", pt: "passear", fr: "se promener", progress: newProgress() },
+  { id: "demo-4", pt: "daqui a pouco", fr: "tout à l'heure", progress: newProgress() },
+  { id: "demo-5", pt: "no entanto", fr: "néanmoins", progress: newProgress() },
 ];
 
-const FEEDBACK: { key: Feedback; label: string; sub: string; tone: string }[] = [
-  { key: "forgot", label: "Je ne me rappelle pas", sub: "Aujourd'hui", tone: "text-destructive border-destructive/40 hover:bg-destructive/10" },
-  { key: "hard", label: "Difficile", sub: "Demain", tone: "border-ochre/50 hover:bg-ochre/10" },
-  { key: "medium", label: "Moyen", sub: "Quelques jours", tone: "border-border hover:bg-secondary" },
-  { key: "easy", label: "Facile", sub: "Espacement long", tone: "border-sage/50 hover:bg-sage/10" },
+const FEEDBACK: { rating: ReviewRating; label: string; sub: string; tone: string }[] = [
+  { rating: 1, label: "Je ne savais pas", sub: "Again", tone: "text-destructive border-destructive/40 hover:bg-destructive/10" },
+  { rating: 2, label: "Difficile", sub: "Hard", tone: "border-ochre/50 hover:bg-ochre/10" },
+  { rating: 3, label: "Je savais", sub: "Good", tone: "border-border hover:bg-secondary" },
+  { rating: 4, label: "Très facile", sub: "Easy", tone: "border-sage/50 hover:bg-sage/10" },
 ];
 
 function SessionPage() {
@@ -37,7 +49,6 @@ function SessionPage() {
     (async () => {
       const cards = await fetchDueCards();
       if (cancelled) return;
-      // Plafond strict de 25 cartes/jour (anti-découragement)
       const limited = (cards ?? DEMO_DECK).slice(0, DAILY_LIMIT);
       setDeck(limited);
       setLoading(false);
@@ -53,9 +64,9 @@ function SessionPage() {
     ? ((index + (revealed ? 0.5 : 0)) / deck.length) * 100
     : 0;
 
-  const handleFeedback = async (key: Feedback) => {
+  const handleFeedback = async (rating: ReviewRating) => {
     if (!card) return;
-    await recordFeedback(card.id, card.box, key);
+    await recordReview(card.id, card.progress, rating);
     if (index + 1 >= deck.length) {
       setDone(true);
     } else {
@@ -97,7 +108,6 @@ function SessionPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-3rem)] flex-col bg-background text-foreground">
-      {/* Top bar with discreet progress */}
       <div className="border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
           <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
@@ -115,7 +125,6 @@ function SessionPage() {
         </div>
       </div>
 
-      {/* Card */}
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-2xl">
           <div className="perspective-1200">
@@ -124,7 +133,6 @@ function SessionPage() {
                 revealed ? "rotate-y-180" : ""
               }`}
             >
-              {/* Recto - Portugais */}
               <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-border bg-card/60 px-10 py-16 text-center neon-border">
                 <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
                   Português
@@ -134,7 +142,6 @@ function SessionPage() {
                 </p>
               </div>
 
-              {/* Verso - Français */}
               <div className="backface-hidden rotate-y-180 absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-border bg-card/60 px-10 py-16 text-center neon-border">
                 <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
                   Français
@@ -146,7 +153,6 @@ function SessionPage() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="mt-10">
             {!revealed ? (
               <button
@@ -162,8 +168,8 @@ function SessionPage() {
               >
                 {FEEDBACK.map((f) => (
                   <button
-                    key={f.label}
-                    onClick={() => handleFeedback(f.key)}
+                    key={f.rating}
+                    onClick={() => handleFeedback(f.rating)}
                     className={`flex flex-col items-center gap-1 rounded-md border bg-card/40 px-3 py-4 transition-colors ${f.tone}`}
                   >
                     <span className="text-sm font-medium">{f.label}</span>

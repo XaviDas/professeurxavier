@@ -69,7 +69,7 @@ function DashboardEleve() {
       .from("card_progress")
       .select("id", { count: "exact", head: true })
       .eq("student_id", user.id)
-      .lte("next_review_date", todayEnd.toISOString());
+      .lte("due", todayEnd.toISOString());
 
     setState({
       loading: false,

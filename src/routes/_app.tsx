@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }) => {
+    // Skip auth check on server — localStorage is not available during SSR.
+    // The client-side AppLayout effect performs the real check after hydration.
+    if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       throw redirect({
@@ -24,9 +27,20 @@ function AppLayout() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data: sessionData }) => {
       if (!active) return;
-      const mustChange = data.user?.user_metadata?.must_change_password === true;
+      if (!sessionData.session) {
+        const path = window.location.pathname;
+        navigate({
+          to: path.startsWith("/dashboard/enseignant")
+            ? "/login/enseignant"
+            : "/login/eleve",
+        });
+        return;
+      }
+      const { data: userData } = await supabase.auth.getUser();
+      if (!active) return;
+      const mustChange = userData.user?.user_metadata?.must_change_password === true;
       const path = window.location.pathname;
       if (mustChange && path !== "/eleve/mot-de-passe") {
         navigate({ to: "/eleve/mot-de-passe" });
@@ -42,7 +56,13 @@ function AppLayout() {
     };
   }, [navigate]);
 
-  if (!checked) return null;
+  if (!checked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Chargement…
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

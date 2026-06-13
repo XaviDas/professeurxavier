@@ -12,7 +12,15 @@ import {
   YAxis,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
+
+const RATING_META: Record<1 | 2 | 3 | 4, { dot: string; label: string; cls: string }> = {
+  1: { dot: "🔴", label: "Again", cls: "text-[#e63946]" },
+  2: { dot: "🟠", label: "Hard", cls: "text-[#f4a261]" },
+  3: { dot: "🟢", label: "Good", cls: "text-[#2a9d8f]" },
+  4: { dot: "🔵", label: "Easy", cls: "text-[#4361ee]" },
+};
 
 export const Route = createFileRoute("/_app/enseignant/classe/$id")({
   head: () => ({ meta: [{ title: "Détail de la classe" }] }),

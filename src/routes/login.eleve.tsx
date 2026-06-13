@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { validatePassword, passwordHelpText } from "@/lib/password-validation";
 
 type Search = { confirmed?: string };
 
@@ -43,8 +44,9 @@ function LoginEleve() {
           toast.error("Code d'invitation requis");
           return;
         }
-        if (password.length < 8) {
-          toast.error("Mot de passe trop court (8 caractères minimum)");
+        const pwdError = validatePassword(password);
+        if (pwdError) {
+          toast.error(pwdError);
           return;
         }
         const { data, error } = await supabase.auth.signUp({
@@ -201,6 +203,9 @@ function LoginEleve() {
               onToggle={() => setShowPwd((v) => !v)}
               placeholder={tab === "signup" ? "8 caractères minimum" : "••••••••"}
             />
+            {tab === "signup" && (
+              <p className="text-xs text-muted-foreground/70">{passwordHelpText}</p>
+            )}
             {tab === "signup" && (
               <Field
                 label="Code d'invitation de la classe"

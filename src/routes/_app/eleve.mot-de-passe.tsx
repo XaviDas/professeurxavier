@@ -3,6 +3,8 @@ import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PasswordField } from "@/routes/login.eleve";
+import { validatePassword, passwordHelpText } from "@/lib/password-validation";
 
 export const Route = createFileRoute("/_app/eleve/mot-de-passe")({
   head: () => ({ meta: [{ title: "Changer mon mot de passe" }] }),
@@ -12,13 +14,15 @@ export const Route = createFileRoute("/_app/eleve/mot-de-passe")({
 function ChangePassword() {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (pw.length < 6) {
-      toast.error("Le mot de passe doit contenir au moins 6 caractères.");
+    const pwdError = validatePassword(pw);
+    if (pwdError) {
+      toast.error(pwdError);
       return;
     }
     if (pw !== pw2) {
@@ -59,30 +63,26 @@ function ChangePassword() {
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <label className="block">
-          <span className="mb-1.5 block text-[10px] uppercase tracking-widest text-muted-foreground/80">
-            Nouveau mot de passe
-          </span>
-          <input
-            type="password"
+        <div>
+          <PasswordField
+            label="Nouveau mot de passe"
             value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            required
-            className="w-full rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+            onChange={setPw}
+            show={showPwd}
+            onToggle={() => setShowPwd((v) => !v)}
           />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-[10px] uppercase tracking-widest text-muted-foreground/80">
-            Confirmer le mot de passe
-          </span>
-          <input
-            type="password"
+          <p className="mt-1.5 text-xs text-muted-foreground/70">{passwordHelpText}</p>
+        </div>
+        <div>
+          <PasswordField
+            label="Confirmer le mot de passe"
             value={pw2}
-            onChange={(e) => setPw2(e.target.value)}
-            required
-            className="w-full rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+            onChange={setPw2}
+            show={showPwd}
+            onToggle={() => setShowPwd((v) => !v)}
           />
-        </label>
+          <p className="mt-1.5 text-xs text-muted-foreground/70">{passwordHelpText}</p>
+        </div>
         <button
           type="submit"
           disabled={loading}

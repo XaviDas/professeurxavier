@@ -16,26 +16,47 @@ export type Database = {
     Tables: {
       card_progress: {
         Row: {
-          box_number: number
           card_id: string
+          difficulty: number
+          due: string
+          elapsed_days: number
           id: string
-          next_review_date: string
+          lapses: number
+          last_review: string | null
+          reps: number
+          scheduled_days: number
+          stability: number
+          state: number
           student_id: string
           updated_at: string
         }
         Insert: {
-          box_number?: number
           card_id: string
+          difficulty?: number
+          due?: string
+          elapsed_days?: number
           id?: string
-          next_review_date?: string
+          lapses?: number
+          last_review?: string | null
+          reps?: number
+          scheduled_days?: number
+          stability?: number
+          state?: number
           student_id: string
           updated_at?: string
         }
         Update: {
-          box_number?: number
           card_id?: string
+          difficulty?: number
+          due?: string
+          elapsed_days?: number
           id?: string
-          next_review_date?: string
+          lapses?: number
+          last_review?: string | null
+          reps?: number
+          scheduled_days?: number
+          stability?: number
+          state?: number
           student_id?: string
           updated_at?: string
         }
@@ -58,30 +79,30 @@ export type Database = {
       }
       card_reviews: {
         Row: {
-          box_after: number
-          box_before: number
           card_id: string
           created_at: string
-          feedback: string
           id: string
+          rating: number
+          scheduled_days: number
+          state_before: number
           student_id: string
         }
         Insert: {
-          box_after: number
-          box_before: number
           card_id: string
           created_at?: string
-          feedback: string
           id?: string
+          rating: number
+          scheduled_days: number
+          state_before: number
           student_id: string
         }
         Update: {
-          box_after?: number
-          box_before?: number
           card_id?: string
           created_at?: string
-          feedback?: string
           id?: string
+          rating?: number
+          scheduled_days?: number
+          state_before?: number
           student_id?: string
         }
         Relationships: [

@@ -566,7 +566,16 @@ function ClasseDetailPage() {
               </div>
             )}
           </section>
-        </>
+          </TabsContent>
+
+          <TabsContent value="journal">
+            <JournalSection
+              reviews={reviews}
+              cardById={cardById}
+              students={students}
+            />
+          </TabsContent>
+        </Tabs>
       )}
 
       {difficultDialog && (

@@ -31,13 +31,15 @@ type Review = {
   id: string;
   card_id: string;
   student_id: string;
-  feedback: "forgot" | "hard" | "medium" | "easy";
-  box_after: number;
+  rating: 1 | 2 | 3 | 4;
+  state_before: number;
+  scheduled_days: number;
   created_at: string;
 };
-type Progress = { student_id: string; card_id: string; box_number: number };
+type Progress = { student_id: string; card_id: string; state: number; stability: number };
 
-const SCORE: Record<Review["feedback"], number> = { forgot: 0, hard: 33, medium: 66, easy: 100 };
+// Score 0..100 par note FSRS (1=Again, 2=Hard, 3=Good, 4=Easy)
+const SCORE: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 33, 3: 66, 4: 100 };
 const COLORS = ["#e63946", "#4361ee", "#2a9d8f", "#f4a261", "#a855f7", "#14b8a6", "#ec4899"];
 
 function masteryColor(pct: number, hasData: boolean): { bar: string; label: string } {
@@ -97,14 +99,14 @@ function ClasseDetailPage() {
       cardIds.length
         ? supabase
             .from("card_reviews")
-            .select("id, card_id, student_id, feedback, box_after, created_at")
+            .select("id, card_id, student_id, rating, state_before, scheduled_days, created_at")
             .in("card_id", cardIds)
             .order("created_at", { ascending: true })
         : Promise.resolve({ data: [] as Review[] }),
       cardIds.length
         ? supabase
             .from("card_progress")
-            .select("student_id, card_id, box_number")
+            .select("student_id, card_id, state, stability")
             .in("card_id", cardIds)
         : Promise.resolve({ data: [] as Progress[] }),
     ]);
@@ -150,7 +152,7 @@ function ClasseDetailPage() {
         map.set(c.id, { pct: 0, hasData: false });
         continue;
       }
-      const good = rs.filter((r) => r.feedback === "easy" || r.feedback === "medium").length;
+      const good = rs.filter((r) => r.rating >= 3).length;
       map.set(c.id, { pct: Math.round((good / rs.length) * 100), hasData: true });
     }
     return map;
@@ -169,9 +171,9 @@ function ClasseDetailPage() {
       const own = reviews.filter((r) => r.student_id === s.id);
       const total = own.length;
 
-      // Mastered: cards in box 4-5 (class cards only — match table scope)
+      // Mastered: FSRS "Review" state (2) with stability suffisante
       const mastered = progress.filter(
-        (p) => p.student_id === s.id && p.box_number >= 4,
+        (p) => p.student_id === s.id && p.state === 2 && p.stability >= 21,
       ).length;
       const totalCards = progress.filter((p) => p.student_id === s.id).length;
 
@@ -183,7 +185,7 @@ function ClasseDetailPage() {
       }
       const difficult: { card: Flashcard; failed: number }[] = [];
       byCard.forEach((rs, cardId) => {
-        const bad = rs.filter((r) => r.feedback === "forgot" || r.feedback === "hard").length;
+        const bad = rs.filter((r) => r.rating <= 2).length;
         if (bad > rs.length / 2 && bad > 0) {
           const card = cardById.get(cardId);
           if (card) difficult.push({ card, failed: bad });
@@ -234,7 +236,7 @@ function ClasseDetailPage() {
       if (!byDay.has(day)) byDay.set(day, {});
       const row = byDay.get(day)!;
       if (!row[r.student_id]) row[r.student_id] = { sum: 0, n: 0 };
-      row[r.student_id].sum += SCORE[r.feedback];
+      row[r.student_id].sum += SCORE[r.rating];
       row[r.student_id].n += 1;
     }
     const days = Array.from(byDay.keys()).sort();
